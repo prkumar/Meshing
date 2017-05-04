@@ -7,6 +7,11 @@ branch = True
 # The source to measure during execution.
 source = meshing
 
+# A list of file name patterns, the files to leave out of measurement.
+omit =
+    # ignore about information
+    meshing/__about__.py
+
 [report]
 # When running a summary report, show missing lines.
 show_missing = True
