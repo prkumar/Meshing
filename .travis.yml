@@ -25,3 +25,7 @@ after_success:
   - pip install pytest coverage codeclimate-test-reporter
   - coverage run --source meshing -m pytest
   - codeclimate-test-reporter --file .coverage
+
+addons:
+  code_climate:
+    repo_token: 3a10621b32482135d291ea233566de6dad2320a696406e598226b835f09c7dc3
