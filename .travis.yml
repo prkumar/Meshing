@@ -1,11 +1,7 @@
-language: python
-
 os:
   - linux
   # travis does not support Python on OS X builds.
   # - osx
-
-language: python
 
 matrix:
   include:
