@@ -3,6 +3,7 @@ os:
   # travis does not support Python on OS X builds.
   # - osx
 
+language: python
 python:
   - 2.7
   - 3.4
