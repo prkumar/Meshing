@@ -3,12 +3,9 @@ os:
   # travis does not support Python on OS X builds.
   # - osx
 
-matrix:
-  include:
-    - python: 2.7
-      env: TOXENV=py27
-    - python: 3.4
-      env: TOXENV=py34
+python:
+  - 2.7
+  - 3.4
 
 # Command to install
 install:
@@ -17,7 +14,7 @@ install:
 
 # Command to run tests.
 script:
-  - tox -e $TOXENV
+  - tox -e py
 
 after_success:
   - pip install pytest coverage codeclimate-test-reporter
