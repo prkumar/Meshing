@@ -3,6 +3,24 @@
 import types
 
 
+class FlushError(Exception):
+
+    def __init__(self, expected, actual):
+        self.expected = expected
+        self.actual = actual
+
+
+def flush(iterator, count=-1):
+    remaining = count
+    for item in iterator:
+        if not remaining:
+            break
+        yield item
+        remaining -= 1
+    if remaining > 0:
+        raise FlushError(count, remaining)
+
+
 def is_generator(obj):
     return isinstance(obj, types.GeneratorType)
 
@@ -39,21 +57,3 @@ class NonEmptyLines(object):
     def next(self):
         self._line_no, line = next(self._generator)
         return line
-
-
-class FlushError(Exception):
-
-    def __init__(self, expected, actual):
-        self.expected = expected
-        self.actual = actual
-
-
-def flush(iterator, count=-1):
-    remaining = count
-    for item in iterator:
-        if not remaining:
-            break
-        yield item
-        remaining -= 1
-    if remaining > 0:
-        raise FlushError(count, remaining)
