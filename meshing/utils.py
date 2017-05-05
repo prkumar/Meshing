@@ -1,4 +1,8 @@
 
+# Standard-library imports
+import contextlib
+
+
 class FlushError(Exception):
 
     def __init__(self, expected, actual):
@@ -32,14 +36,20 @@ class NonEmptyLines(object):
                            "%s." % (type(f))
 
     @staticmethod
-    def read(f):
+    @contextlib.contextmanager
+    def _open_content(f):
         try:
-            with (open(f) if isinstance(f, str) else f) as stream:
-                for line_no, line in enumerate((l.rstrip() for l in stream)):
-                    if line:
-                        yield line_no + 1, line
+            with (open(f) if isinstance(f, str) else f) as context:
+                yield context
         except (TypeError, AttributeError):
             raise NonEmptyLines.ReadError(f)
+
+    @staticmethod
+    def read(f):
+        with NonEmptyLines._open_content(f) as stream:
+            for line_no, line in enumerate((l.rstrip() for l in stream)):
+                if line:
+                    yield line_no + 1, line
 
     def __init__(self, f):
         self._generator = self.read(f)
