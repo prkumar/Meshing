@@ -1,5 +1,6 @@
 # Standard-library imports
 import io
+import os
 
 # Package imports
 from meshing import utils
@@ -37,14 +38,17 @@ def test_flush_raises_error_when_count_exceeds_remaining(iterable):
 # == NoneEmptyLines tests == #
 
 TEST_FILE_1 = u"""
-non-empty line
+Line2
 
-dsads
+Line3
 """
+TEST_FILE_2 = u""""""
+TEST_FILE_3 = u"""Line1
+Line2"""
 
 
 @pytest.mark.parametrize("content", [
-    TEST_FILE_1
+    TEST_FILE_1, TEST_FILE_2
 ])
 def test_reading_only_empty_lines(content):
     fobj = io.StringIO(content)
@@ -52,13 +56,13 @@ def test_reading_only_empty_lines(content):
     assert [l for l in (s.rstrip() for s in fobj.readlines()) if l] == list(obj)
 
 
-@pytest.mark.parametrize("content, expected_length", [
-    (TEST_FILE_1, 4)
+@pytest.mark.parametrize("content", [
+    TEST_FILE_1, TEST_FILE_2
 ])
-def test_reading_reads_through_lines(content, expected_length):
+def test_reading_reads_through_lines(content):
     obj = utils.NonEmptyLines(io.StringIO(content))
     list(obj)  # drain obj
-    assert obj.line_no == expected_length
+    assert obj.line_no == content.count(os.linesep)
 
 
 @pytest.mark.parametrize("content", [
