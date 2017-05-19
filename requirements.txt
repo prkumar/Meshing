@@ -1,3 +1,8 @@
+# Viewer
+pyopengl
+pygame
+pyassimp
+
 # Testing
 pytest
 tox
