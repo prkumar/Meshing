@@ -13,6 +13,8 @@ Authors: Séverin Lemaignan, 2012-2016
 import sys
 import logging
 
+from meshing import mesh as meshing
+
 logger = logging.getLogger("pyassimp")
 gllogger = logging.getLogger("OpenGL")
 gllogger.setLevel(logging.WARNING)
@@ -414,6 +416,9 @@ class PyAssimp3DViewer:
         self.current_cam = self.default_camera
         self.set_camera_projection()
 
+        # Edge collapses
+        self.edge_collapses = []
+        self.connectivity = None
         self.load_model(model)
 
         # user interactions
@@ -602,13 +607,16 @@ class PyAssimp3DViewer:
             self.glize(scene, child)
 
     def load_model(self, path, postprocess=False):
-        logger.info("Loading model:" + path + "...")
 
-        if postprocess:
-            self.scene = pyassimp.load(path, postprocess)
+        if isinstance(path, meshing.MeshConnectivity):
+            logger.info("Loading mesh connectivity module")
         else:
-            self.scene = pyassimp.load(path)
-        logger.info("Done.")
+            logger.info("Loading model:" + path + "...")
+            if postprocess:
+                self.scene = pyassimp.load(path, postprocess)
+            else:
+                self.scene = pyassimp.load(path)
+            logger.info("Done.")
 
         scene = self.scene
         # log some statistics
@@ -620,6 +628,8 @@ class PyAssimp3DViewer:
 
         self.scene_center = [(a + b) / 2. for a, b in zip(self.bb_min, self.bb_max)]
 
+
+        self.connectivity = meshing.MeshConnectivity(scene.meshes[0])
         for index, mesh in enumerate(scene.meshes):
             self.prepare_gl_buffers(mesh)
 
@@ -716,7 +726,7 @@ class PyAssimp3DViewer:
         if colorid in self.colorid2node:
             return self.colorid2node[colorid]
 
-    def render(self, wireframe=False, twosided=False):
+    def render(self, wireframe=True, twosided=True):
 
         glEnable(GL_DEPTH_TEST)
         glDepthFunc(GL_LEQUAL)
@@ -724,7 +734,7 @@ class PyAssimp3DViewer:
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE if wireframe else GL_FILL)
         glDisable(GL_CULL_FACE) if twosided else glEnable(GL_CULL_FACE)
 
-        self.render_grid()
+        # self.render_grid()
 
         self.recursive_render(self.scene.rootnode, None, mode=HELPERS)
 
@@ -1088,6 +1098,23 @@ class PyAssimp3DViewer:
                 strafe = 1
 
             self.move_selected_node(up, strafe)
+
+        if key == pygame.K_SPACE:
+            print("Progressive mesh...", self.edge_collapses, self.connectivity)
+            if self.edge_collapses and self.connectivity:
+                print("Progressive mesh...")
+                collapse = self.edge_collapses.pop()
+                self.connectivity.vertex_split(*collapse)
+                self.scene.meshes[0] = self.connectivity.save()
+                self.prepare_gl_buffers(self.scene.meshes[0])
+
+        if key == pygame.K_BACKSPACE:
+            print("Mesh simplification...")
+            if not self.edge_collapses and self.connectivity:
+                print("Mesh simplification...")
+                self.edge_collapses.append(self.connectivity.edge_collapse(0, 1))
+                self.scene.meshes[0] = self.connectivity.save()
+                self.prepare_gl_buffers(self.scene.meshes[0])
 
         if key == pygame.K_f:
             pygame.display.toggle_fullscreen()

@@ -1,70 +1,35 @@
-
-# Standard-library imports
-import contextlib
-
-
-class FlushError(Exception):
-
-    def __init__(self, expected, actual):
-        self.expected = expected
-        self.actual = actual
+# Standard library import
+import itertools
+import heapq
 
 
-def flush(iterator, count=-1):
-    remaining = count
-    for item in iterator:
-        if not remaining:
-            break
-        yield item
-        remaining -= 1
-    if remaining > 0:
-        raise FlushError(count, remaining)
+pq = []                         # list of entries arranged in a heap
+entry_finder = {}               # mapping of tasks to entries
+REMOVED = '<removed-task>'      # placeholder for a removed task
+counter = itertools.count()     # unique sequence count
 
 
-class NonEmptyLines(object):
-    """
-    File-like object that ignores lines containing only white-space.
+def add_task(task, priority=0):
+    'Add a new task or update the priority of an existing task'
+    if task in entry_finder:
+        remove_task(task)
+    count = next(counter)
+    entry = [priority, count, task]
+    entry_finder[task] = entry
+    heapq.heappush(pq, entry)
 
-    TODO:
-        * Add support for ignoring comments.
-    """
 
-    class ReadError(TypeError):
-        def __init__(self, f):
-            self.message = "Failed to read: " \
-                           "expected filename or context manager, got " \
-                           "%s." % (type(f))
+def remove_task(task):
+    'Mark an existing task as REMOVED.  Raise KeyError if not found.'
+    entry = entry_finder.pop(task)
+    entry[-1] = REMOVED
 
-    @staticmethod
-    @contextlib.contextmanager
-    def _open_content(f):
-        try:
-            with (open(f) if isinstance(f, str) else f) as context:
-                yield context
-        except (TypeError, AttributeError):
-            raise NonEmptyLines.ReadError(f)
 
-    @staticmethod
-    def read(f):
-        with NonEmptyLines._open_content(f) as stream:
-            for line_no, line in enumerate((l.rstrip() for l in stream)):
-                if line:
-                    yield line_no + 1, line
-
-    def __init__(self, f):
-        self._generator = self.read(f)
-        self._line_no = 0
-
-    @property
-    def line_no(self):
-        return self._line_no
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return self.next()
-
-    def next(self):
-        self._line_no, line = next(self._generator)
-        return line
+def pop_task():
+    'Remove and return the lowest priority task. Raise KeyError if empty.'
+    while pq:
+        priority, count, task = heapq.heappop(pq)
+        if task is not REMOVED:
+            del entry_finder[task]
+            return task
+    raise KeyError('pop from an empty priority queue')
